@@ -111,7 +111,7 @@ def bar_chart3():
         labels={'Incident Waste Group': '', 'Cost': 'Cost'},
         orientation='h'
     )
-    fig.update_traces(hovertemplate= '%{x} Hrs')
+    fig.update_traces(hovertemplate= '$%{x}')
     fig.update_layout( yaxis={'categoryorder':'total ascending'}, hovermode="y")
     st.plotly_chart(fig, use_container_width=True)
 
