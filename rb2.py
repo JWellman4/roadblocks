@@ -129,10 +129,10 @@ for col in row1:
 row2 = st.columns(1)    
 for col in row2:
     with col1:
-        with st.popover("Top 5 Cost"):
+        with st.popover("Top 5 Hrs"):
             bar_chart()
     with col2:
-        with st.popover('Top 5 Hrs'):
+        with st.popover('Top 5 Cost'):
             bar_chart3()
 
 bar_chart2()
