@@ -12,12 +12,14 @@ st.set_page_config(
 def load_data(file_path):
     return pd.read_csv(file_path)
 
-# Load the data
+# Load the data & create week columns
 df = load_data('Roadblocks.csv')
 df['Date'] = pd.to_datetime(df['Date'])
-df['Week'] = df['Date'].dt.strftime('%b-%d-%Y')
+df['Week'] = df['Date'].dt.to_period('W').apply(lambda r: r.start_time)
+my_tickvals = df['Week'].tolist()
+my_ticktext = [wd.strftime("%b %d, %Y") for wd in my_tickvals]
 
-# Creating Defs
+# Adding Select All and Controling Filters
 def add_select_all_option(options_data):
     options_with_select_all = ['Select All'] + options_data
     return options_with_select_all
@@ -38,6 +40,7 @@ available_options = options_with_select_all
 if "max_selections" not in st.session_state:
     st.session_state["max_selections"] = len(available_options)
 
+# Creating the Sidebar
 with st.sidebar:
     st.title('Filter your Data')
     select_options =st.multiselect(
@@ -61,7 +64,6 @@ else:
 # Grouping and Calculations
 filtered_df_grouped = df_filtered.groupby(by=['Incident Waste Group'], as_index=False)['Waste Hours'].sum()
 top5_WasteHrs = filtered_df_grouped.head(5)
-df_filtered['Week'] = df_filtered['Date'].dt.strftime('%b-%d-%Y')
 filtered_df_grouped_sum = df_filtered.groupby(by=['Week'], as_index=False)['Waste Hours'].sum()
 filtered_df_grouped_cost = df_filtered.groupby(by=['Incident Waste Group'], as_index=False)['Cost'].sum()
 top5_Cost = filtered_df_grouped_cost.head(5)
@@ -72,8 +74,8 @@ formatted_cost = "${:,.2f}".format(cost_card)
 hours_card = df_filtered['Waste Hours'].sum()
 formatted_hours = "{:,.2f}".format(hours_card)
 
-# Display selected options
-def bar_chart():
+# Creating Charts to be Displayed
+def top5hrs_bar_chart():
     fig = px.bar(
         top5_WasteHrs,
         x='Waste Hours',
@@ -82,25 +84,29 @@ def bar_chart():
         height=300,
         color='Waste Hours', color_continuous_scale=px.colors.sequential.Sunsetdark,
         labels={'Incident Waste Group': '', 'Waste Hours': 'Hours'},
-        orientation='h'
+        orientation='h',
+        title='Top 5 Roadblocks based on Hrs'
     )
+    fig.update_xaxes(title='')
     fig.update_traces(hovertemplate= '%{x} Hrs')
     fig.update_layout( yaxis={'categoryorder':'total ascending'}, hovermode="y")
     st.plotly_chart(fig, use_container_width=True)
 
-def bar_chart2():
-    fig2 = px.bar(
+fig2 = px.bar(
         filtered_df_grouped_sum,
         x='Week',
         y='Waste Hours',
-        color='Waste Hours', color_continuous_scale=px.colors.sequential.Sunsetdark
+        color='Waste Hours', color_continuous_scale=px.colors.sequential.Sunsetdark,
+        labels={'Waste Hours': 'Hours'},
+        title='Roadblock Hrs by Week'
     )
-    fig2.update_traces(hovertemplate= '%{x}: %{y} Hrs')
-    fig2.update_xaxes(tickangle=45)
-    fig2.update_yaxes(showgrid=False)
-    st.plotly_chart(fig2, use_container_width=True)
 
-def bar_chart3():
+fig2.update_xaxes(title='',
+        tickangle=-45, 
+        tickvals=my_tickvals,
+        ticktext=my_ticktext)
+
+def top5cost_bar_chart():
     fig = px.bar(
         top5_Cost,
         x='Cost',
@@ -109,9 +115,11 @@ def bar_chart3():
         height=300,
         color='Cost', color_continuous_scale=px.colors.sequential.Sunsetdark,
         labels={'Incident Waste Group': '', 'Cost': 'Cost'},
-        orientation='h'
+        orientation='h',
+        title='Top 5 Roadblocks based on Cost'
     )
-    fig.update_traces(hovertemplate= '$%{x}')
+    fig.update_xaxes(title='',tickprefix='$',tickformat=',.0f')
+    fig.update_traces(hovertemplate= '%{x}')
     fig.update_layout( yaxis={'categoryorder':'total ascending'}, hovermode="y")
     st.plotly_chart(fig, use_container_width=True)
 
@@ -130,9 +138,9 @@ row2 = st.columns(1)
 for col in row2:
     with col1:
         with st.popover("Top 5 Hrs"):
-            bar_chart()
+            top5hrs_bar_chart()
     with col2:
         with st.popover('Top 5 Cost'):
-            bar_chart3()
+            top5cost_bar_chart()
 
-bar_chart2()
+st.plotly_chart(fig2, use_container_width=True)
