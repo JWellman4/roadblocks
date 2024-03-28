@@ -4,7 +4,7 @@ import plotly.express as px
 
 st.set_page_config(
     page_title="Roadblock Report",
-    page_icon="line_chart",
+    page_icon=	":volcano:",
     layout="wide",
 )
 
