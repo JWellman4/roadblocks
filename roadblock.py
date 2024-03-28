@@ -15,6 +15,9 @@ def load_data(file_path):
 # Load the data
 df = load_data('Roadblocks.csv')
 df['Date'] = pd.to_datetime(df['Date'])
+df['Week'] = df['Date'].dt.to_period('W').apply(lambda r: r.start_time)
+my_tickvals = df['Week'].tolist()
+my_ticktext = [wd.strftime("%b %d, %Y") for wd in my_tickvals]
 
 # Creating Defs
 def add_select_all_option(options_data):
@@ -56,7 +59,6 @@ else:
 
 # Grouping and Calculations
 filtered_df_grouped = df_filtered.groupby(by=['Incident Waste Group'], as_index=False)['Waste Hours'].sum()
-df_filtered['Week'] = df_filtered['Date'].dt.strftime('%b-%d-%Y')
 filtered_df_grouped_sum = df_filtered.groupby(by=['Week'], as_index=False)['Waste Hours'].sum()
 
 # Display selected options
@@ -73,19 +75,21 @@ def bar_chart():
     fig.update_layout( yaxis={'categoryorder':'total ascending'}, hovermode="y")
     st.plotly_chart(fig, use_container_width=True)
 
-def bar_chart2():
-    fig2 = px.bar(
+fig2 = px.bar(
         filtered_df_grouped_sum,
         x='Week',
         y='Waste Hours',
-        width=500,
+        width=400,
         height=300,
-        color='Waste Hours', color_continuous_scale=px.colors.sequential.Sunsetdark
+        color='Waste Hours', color_continuous_scale=px.colors.sequential.Sunsetdark,
+        labels={'Waste Hours': 'Hours'},
+        title='Roadblock Hrs by Week'
     )
-    fig2.update_traces(hovertemplate= '%{x}: %{y} Hrs')
-    fig2.update_xaxes(tickangle=45)
-    fig2.update_yaxes(showgrid=False)
-    st.plotly_chart(fig2)
+fig2.update_traces(hovertemplate= 'Week %{x} <br> %{y} Hrs')
+fig2.update_xaxes(title='',
+        tickangle=-45, 
+        tickvals=my_tickvals,
+        ticktext=my_ticktext)
 
 # Create layout using st.columns
 col1, col2 = st.columns([2,3], gap='medium')
@@ -95,7 +99,7 @@ with col1:
                 at it's **peak**. Look at which ones are blocking your performance,\
                 and **:violet[remove them]**!")
     with st.popover("Discover Weekly Trend"):
-        bar_chart2()
+        st.plotly_chart(fig2, use_container_width=True)
 
 with col2:
     bar_chart()
