@@ -105,6 +105,7 @@ fig2.update_xaxes(title='',
         tickangle=-45, 
         tickvals=my_tickvals,
         ticktext=my_ticktext)
+fig2.update_traces(hovertemplate= '%{y:,.1f} Hrs')
 
 def top5cost_bar_chart():
     fig = px.bar(
@@ -143,4 +144,4 @@ for col in row2:
         with st.popover('Top 5 Cost'):
             top5cost_bar_chart()
 
-st.plotly_chart(fig2, value=formatted_hours, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
