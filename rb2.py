@@ -42,24 +42,39 @@ if "max_selections" not in st.session_state:
 
 # Creating the Sidebar
 with st.sidebar:
-    st.title('Filter your Data')
+    st.sidebar.title('Select Fitlers')
+    min_date = min(df['Date'])
+    max_date = max(df['Date'])
+    select_week = st.date_input(
+        label='Select Date(s)',
+        value=(min_date, max_date),
+    )
     select_options =st.multiselect(
-            label='Select Roadblock(s)',
-            options=options_with_select_all,
-            key="selected_options",
-            max_selections=st.session_state["max_selections"],
-            on_change=options_select,
-            format_func=lambda x: "Select All" if x == "Select All" else f"{x}",
+        label='Select Roadblock(s)',
+        options=options_with_select_all,
+        key="selected_options",
+        max_selections=st.session_state["max_selections"],
+        on_change=options_select,
+        format_func=lambda x: "Select All" if x == "Select All" else f"{x}",
     )
     st.markdown("**:violet[Roadblocks]** are **:violet[obstacles]** that keep your team from **performing**\
                 at it's **peak**. Look at which ones are blocking your performance,\
                 and **:violet[remove them]**!")
 
+# Convert select_week to datetime64[ns]
+start_date = pd.to_datetime(select_week[0])
+
+# Check if select_week contains at least two elements before accessing the second element
+if len(select_week) > 1:
+    end_date = pd.to_datetime(select_week[1])
+else:
+    end_date = start_date
+
 # Filter DataFrame based on selected options from both multiselects
 if 'Select All' in select_options:
-    df_filtered = df
+    df_filtered = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
 else:
-    df_filtered = df[df['Incident Waste Group'].isin(select_options)]
+    df_filtered = df[df['Incident Waste Group'].isin(select_options) & (df['Date'] >= start_date) & (df['Date'] <= end_date)]
 
 # Grouping and Calculations
 filtered_df_grouped = df_filtered.groupby(by=['Incident Waste Group'], as_index=False)['Waste Hours'].sum()
@@ -72,7 +87,7 @@ top5_Cost = filtered_df_grouped_cost.head(5)
 cost_card = df_filtered['Cost'].sum()
 formatted_cost = "${:,.2f}".format(cost_card)
 hours_card = df_filtered['Waste Hours'].sum()
-formatted_hours = "{:,.2f}".format(hours_card)
+formatted_hours = "{:,.1f}".format(hours_card)
 
 # Creating Charts to be Displayed
 def top5hrs_bar_chart():
@@ -88,7 +103,7 @@ def top5hrs_bar_chart():
         title='Top 5 Roadblocks based on Hrs'
     )
     fig.update_xaxes(title='')
-    fig.update_traces(hovertemplate= '%{x} Hrs')
+    fig.update_traces(hovertemplate= '%{x:,.1f} Hrs')
     fig.update_layout( yaxis={'categoryorder':'total ascending'}, hovermode="y")
     st.plotly_chart(fig, use_container_width=True)
 
@@ -100,7 +115,7 @@ fig2 = px.bar(
         labels={'Waste Hours': 'Hours'},
         title='Roadblock Hrs by Week'
     )
-
+fig2.update_traces(hovertemplate= 'Week %{x} <br> %{y} Hrs')
 fig2.update_xaxes(title='',
         tickangle=-45, 
         tickvals=my_tickvals,
